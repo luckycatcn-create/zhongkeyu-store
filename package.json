@@ -1,0 +1,14 @@
+{
+  "name": "zhongkeyu-site",
+  "version": "1.0.0",
+  "description": "zhongkeyu cross-border e-commerce site — static front end + admin backend on Vercel (Serverless Functions + Supabase)",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}
