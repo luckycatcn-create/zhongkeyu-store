@@ -3,10 +3,7 @@
   "buildCommand": "npm install",
   "outputDirectory": "public",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/admin/api/(.*)", "destination": "/api/index" },
-    { "source": "/admin/login", "destination": "/api/index" },
-    { "source": "/admin/logout", "destination": "/api/index" }
+    { "source": "/(.*)", "destination": "/api/index" }
   ],
   "functions": {
     "api/index.js": { "maxDuration": 30, "memory": 256 }
