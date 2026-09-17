@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.local
+*.log
+data/messages.jsonl
+data/products.json
+.DS_Store
+
+# debug / temp artifacts
+test*.js
+result*.txt
+*_probe*.txt
