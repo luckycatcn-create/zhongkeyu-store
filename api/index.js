@@ -23,6 +23,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Serve the static front-end from this function so the home page and assets work
+// regardless of the Vercel framework preset (the Express preset does NOT auto-
+// serve public/ as static files, which is why "/" returned 404).
+const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+app.use(express.static(PUBLIC_DIR));
+
 // Allow large product images (base64 data URLs).
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
