@@ -36,6 +36,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const FIELDS = ['name', 'email', 'phone', 'message', 'company', 'country', 'product', 'budget'];
 const REQUIRED = ['name', 'email', 'phone', 'message'];
 
+// ---------- health check (used by admin.html boot test) ----------
+app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
+
 // ---------- public: contact form ----------
 app.post('/api/contact', async (req, res) => {
   const body = req.body || {};
@@ -103,7 +106,12 @@ app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'public'
 
 // ---------- admin: messages ----------
 app.get('/admin/api/messages', checkAuth, async (req, res) => {
-  try { res.json(await db.readMessages()); } catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    res.json(await db.readMessages());
+  } catch (e) {
+    console.error('[messages] read error:', e);
+    res.json([]); // graceful fallback
+  }
 });
 
 app.get('/admin/api/export', checkAuth, async (req, res) => {
@@ -123,7 +131,12 @@ app.get('/admin/api/export', checkAuth, async (req, res) => {
 
 // ---------- products (public read, admin write) ----------
 app.get('/api/products', async (req, res) => {
-  try { res.json(await db.readProducts()); } catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    res.json(await db.readProducts());
+  } catch (e) {
+    console.error('[products] read error:', e);
+    res.json([]); // graceful fallback so the page keeps working
+  }
 });
 app.post('/api/products', checkAuth, async (req, res) => {
   const body = req.body || {};
