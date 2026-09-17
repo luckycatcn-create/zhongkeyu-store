@@ -361,15 +361,21 @@
         w.classList.remove('hidden');
         w.innerHTML = msg;
       };
-      fetch('/api/products')
+      const proto = location.protocol;
+      const host = location.hostname || '';
+      // static file / preview protocols can never reach the API
+      if (proto === 'file:' || host.includes('static-html') || host === '') {
+        warn('⚠️ This page is <b>not</b> running on the live server, so login &amp; upload will not work.<br>Open <b>http://localhost:8787/admin</b> in your browser (not the file/static preview).');
+        return;
+      }
+      fetch('/api/health')
         .then((r) => {
-          const ct = r.headers.get('content-type') || '';
-          if (!(r.ok && ct.includes('application/json'))) {
-            warn('⚠️ This page is <b>not</b> running on the live server, so login &amp; upload will not work.<br>Open <b>http://localhost:8787/admin</b> in your browser — the address must start with <b>localhost:8787</b>, not <b>static-html</b>.');
+          if (!r.ok) {
+            warn('⚠️ Cannot reach the server. Please refresh, or open <b>http://localhost:8787/admin</b> if running locally.');
           }
         })
         .catch(() => {
-          warn('⚠️ Cannot reach the server. Open <b>http://localhost:8787/admin</b> in your browser (not the file/static preview).');
+          warn('⚠️ Cannot reach the server. Please refresh, or open <b>http://localhost:8787/admin</b> if running locally.');
         });
     })();
 
