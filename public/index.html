@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>zhongkeyu · Global Supplier of Premium Goods</title>
+  <meta name="description" content="zhongkeyu — cross-border e-commerce independent site. Quality products, worldwide shipping, direct inquiry." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="#home">zhongkeyu<span>.</span></a>
+      <nav class="nav-links">
+        <a href="#products">Products</a>
+        <a href="#categories">Categories</a>
+        <a href="#about">About</a>
+        <a href="#contact" class="btn btn-ghost">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <section id="home" class="hero">
+    <div class="container hero-inner">
+      <div class="hero-text">
+        <p class="eyebrow">Worldwide Shipping · Factory Direct</p>
+        <h1>Premium products, delivered to your door — anywhere.</h1>
+        <p class="lead">zhongkeyu connects global buyers with trusted manufacturing. Browse our catalog and talk to our team in one click.</p>
+        <div class="hero-actions">
+          <a href="#products" class="btn btn-primary">Explore Products</a>
+          <a href="#contact" class="btn btn-ghost">Get a Quote</a>
+        </div>
+        <div class="hero-stats">
+          <div><strong>120+</strong><span>Countries served</span></div>
+          <div><strong>5k+</strong><span>SKUs available</span></div>
+          <div><strong>24h</strong><span>Avg. reply time</span></div>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="globe">🌍</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="products" class="section">
+    <div class="container">
+      <h2 class="section-title">Featured Products</h2>
+      <p class="section-sub">A selection of our best-selling categories. Custom OEM/ODM available.</p>
+      <div class="product-grid" id="productGrid"></div>
+    </div>
+  </section>
+
+  <section id="categories" class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">Shop by Category</h2>
+      <div class="cat-grid">
+        <div class="cat-card"><span>🎧</span>Audio &amp; Electronics</div>
+        <div class="cat-card"><span>🏠</span>Home &amp; Living</div>
+        <div class="cat-card"><span>👜</span>Fashion &amp; Accessories</div>
+        <div class="cat-card"><span>⚙️</span>Industrial Parts</div>
+        <div class="cat-card"><span>🧴</span>Beauty &amp; Care</div>
+        <div class="cat-card"><span>🍱</span>Food &amp; Packaging</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="section">
+    <div class="container about-inner">
+      <div class="about-text">
+        <h2 class="section-title">About zhongkeyu</h2>
+        <p>We are a cross-border trading team with 10+ years of sourcing and manufacturing experience. From sampling to sea freight, we handle the supply chain so you can focus on your market.</p>
+        <ul class="about-list">
+          <li>✔ Verified factories &amp; quality inspection</li>
+          <li>✔ Flexible MOQ &amp; private labeling</li>
+          <li>✔ DDP / DAP shipping to major ports</li>
+          <li>✔ Multilingual sales support</li>
+        </ul>
+      </div>
+      <div class="about-card">
+        <h3>Why buyers choose us</h3>
+        <p>"zhongkeyu shortened our procurement cycle by 40%. Reliable and fast." — Distributor, Germany</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="section section-alt">
+    <div class="container contact-inner">
+      <div class="contact-intro">
+        <h2 class="section-title">Send us a message</h2>
+        <p class="section-sub">Tell us what you need. Our team replies within 24 hours.</p>
+        <ul class="contact-meta">
+          <li>📧 luckycat.cn@gmail.com</li>
+          <li>💬 WhatsApp: +86 138 0000 0000</li>
+          <li>📍 Shenzhen, China</li>
+        </ul>
+      </div>
+
+      <form id="contactForm" class="contact-form" novalidate>
+        <div class="field">
+          <label for="name">Name <span class="req">*</span></label>
+          <input id="name" name="name" type="text" required />
+        </div>
+        <div class="field">
+          <label for="email">Email <span class="req">*</span></label>
+          <input id="email" name="email" type="email" required />
+        </div>
+        <div class="field">
+          <label for="phone">Phone / WhatsApp <span class="req">*</span></label>
+          <input id="phone" name="phone" type="text" required />
+        </div>
+        <div class="field">
+          <label for="company">Company <span class="opt">(optional)</span></label>
+          <input id="company" name="company" type="text" />
+        </div>
+        <div class="field">
+          <label for="country">Country / Region <span class="opt">(optional)</span></label>
+          <input id="country" name="country" type="text" />
+        </div>
+        <div class="field">
+          <label for="product">Product of Interest <span class="opt">(optional)</span></label>
+          <input id="product" name="product" type="text" placeholder="e.g. wireless earbuds, MOQ 1000" />
+        </div>
+        <div class="field">
+          <label for="budget">Budget / Quantity <span class="opt">(optional)</span></label>
+          <input id="budget" name="budget" type="text" placeholder="e.g. $5–8 / unit, 5000 pcs" />
+        </div>
+        <div class="field field-full">
+          <label for="message">Message <span class="req">*</span></label>
+          <textarea id="message" name="message" rows="4" required></textarea>
+        </div>
+        <div class="field-full form-actions">
+          <button type="submit" class="btn btn-primary" id="submitBtn">Send Message</button>
+          <p id="formStatus" class="form-status" role="status"></p>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <span class="brand">zhongkeyu<span>.</span></span>
+        <p class="muted">Global supplier of premium goods.</p>
+      </div>
+      <p class="muted">© <span id="year"></span> zhongkeyu. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
