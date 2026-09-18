@@ -1,393 +1,281 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin · zhongkeyu</title>
-  <style>
-    :root { --brand: #2563eb; --ink: #0f172a; --muted: #64748b; --bg: #f5f7fb; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: "Inter", "Segoe UI", system-ui, Arial, sans-serif; color: var(--ink); background: var(--bg); }
-    .wrap { width: min(1200px, 94vw); margin: 0 auto; padding: 28px 0 48px; }
-    header.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
-    h1 { font-size: 1.4rem; margin: 0; }
-    .meta { color: var(--muted); font-size: 0.9rem; }
-    .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
-    .tab { font: inherit; font-weight: 600; padding: 9px 16px; border-radius: 10px; border: 1px solid #d6deea; background: #fff; cursor: pointer; }
-    .tab.active { background: var(--brand); color: #fff; border-color: var(--brand); }
-    .count { background: #e7efff; color: var(--brand); font-weight: 700; padding: 2px 10px; border-radius: 999px; font-size: 0.85rem; }
-    .card { background: #fff; border: 1px solid #eef2f7; border-radius: 14px; box-shadow: 0 10px 30px rgba(15,23,42,0.06); padding: 20px; margin-bottom: 18px; }
-    .actions { display: flex; gap: 10px; }
-    button, .btn { font: inherit; font-weight: 600; padding: 9px 16px; border-radius: 10px; border: 1px solid #d6deea; background: #fff; cursor: pointer; }
-    button.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
-    .table-card { background: #fff; border: 1px solid #eef2f7; border-radius: 14px; box-shadow: 0 10px 30px rgba(15,23,42,0.06); overflow: auto; }
-    table { border-collapse: collapse; width: 100%; min-width: 920px; font-size: 0.9rem; }
-    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
-    th { position: sticky; top: 0; background: #f8fafc; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
-    tr:hover td { background: #fafcff; }
-    td.msg { max-width: 280px; white-space: pre-wrap; }
-    .empty { padding: 40px; text-align: center; color: var(--muted); }
-    label { display: block; font-size: 0.85rem; font-weight: 600; margin: 10px 0 4px; }
-    input, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d6deea; border-radius: 10px; font: inherit; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .form-grid .full { grid-column: 1 / -1; }
-    .prod-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 6px; }
-    .prod-item { border: 1px solid #eef2f7; border-radius: 12px; padding: 12px; background: #fbfdff; }
-    .prod-item img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; background: #f1f5f9; }
-    .prod-item .pname { font-weight: 700; margin: 8px 0 2px; }
-    .prod-item .pprice { color: var(--brand); font-weight: 700; }
-    .prod-item .row { display: flex; gap: 8px; margin-top: 10px; }
-    .hidden { display: none !important; }
-    .imgprev { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
-    .err { color: #dc2626; }
-
-    /* Login overlay */
-    #login { position: fixed; inset: 0; background: rgba(15,23,42,0.55); display: grid; place-items: center; z-index: 100; }
-    #login .box { background: #fff; padding: 28px; border-radius: 14px; width: min(360px, 92vw); box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-    #login h2 { margin: 0 0 6px; }
-    #login .err { min-height: 1.2em; margin: 8px 0 0; font-size: 0.85rem; }
-    #login button { width: 100%; margin-top: 14px; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ONEWORLD — Admin</title>
+<style>
+  :root { --p:#0f4c81; --pd:#0a355c; --a:#f5a623; --ink:#1f2733; --mut:#6b7686; --line:#e6e9ef; --bg:#f6f8fb; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Segoe UI",Roboto,"Microsoft YaHei",sans-serif; color:var(--ink); background:var(--bg); }
+  .hidden { display:none !important; }
+  #login { position:fixed; inset:0; background:rgba(10,53,92,.85); display:grid; place-items:center; z-index:50; }
+  #login .box { background:#fff; padding:32px; border-radius:12px; width:340px; box-shadow:0 10px 40px rgba(0,0,0,.3); }
+  #login h2 { margin:0 0 16px; color:var(--p); }
+  #login input { width:100%; padding:11px; margin-bottom:12px; border:1px solid var(--line); border-radius:8px; }
+  #login button { width:100%; background:var(--a); border:none; padding:11px; font-weight:700; border-radius:8px; cursor:pointer; }
+  .warn { background:#fdeaea; color:#b42318; padding:10px 14px; border-radius:8px; margin-bottom:14px; }
+  header.adm { background:var(--pd); color:#fff; padding:12px 22px; display:flex; justify-content:space-between; align-items:center; }
+  header.adm .brand { font-weight:800; font-size:18px; letter-spacing:1px; }
+  header.adm button { background:#fff; color:var(--p); border:none; padding:8px 14px; border-radius:8px; font-weight:700; cursor:pointer; }
+  .tabs { display:flex; gap:6px; padding:12px 22px 0; background:#fff; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .tabs button { border:none; background:none; padding:10px 16px; cursor:pointer; font-weight:600; color:var(--mut); border-bottom:3px solid transparent; }
+  .tabs button.active { color:var(--p); border-bottom-color:var(--a); }
+  main { padding:22px; max-width:1100px; margin:0 auto; }
+  h3 { color:var(--pd); margin:0 0 14px; }
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.04); }
+  th, td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; font-size:14px; vertical-align:top; }
+  th { background:#eef2f8; color:var(--pd); }
+  .btn { background:var(--a); border:none; padding:8px 14px; border-radius:8px; font-weight:700; cursor:pointer; }
+  .btn.d { background:#fdeaea; color:#b42318; }
+  .btn.s { background:var(--p); color:#fff; }
+  .btn.g { background:#e7f6ec; color:#1d7a3f; }
+  .panel { background:#fff; border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,.04); }
+  label { display:block; font-weight:600; font-size:13px; margin:10px 0 4px; }
+  input, textarea, select { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font-size:14px; font-family:inherit; }
+  textarea { min-height:80px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:200px; }
+  .muted { color:var(--mut); font-size:13px; }
+  .pill { display:inline-block; background:#eef2f8; color:var(--p); padding:2px 8px; border-radius:20px; font-size:12px; }
+  .ok { color:#1d7a3f; font-weight:700; }
+  img.thumb { height:46px; border-radius:6px; object-fit:cover; }
+</style>
 </head>
 <body>
-  <!-- Login -->
   <div id="login">
     <div class="box">
       <h2>Admin Login</h2>
-      <p class="meta">Enter the admin password to manage messages &amp; products.</p>
-      <div id="serverWarn" class="hidden" style="background:#fff4f4;border:1px solid #fecaca;color:#b91c1c;padding:10px 12px;border-radius:10px;margin-bottom:10px;font-size:0.85rem;line-height:1.4"></div>
-      <label>Username</label>
-      <input id="lUser" value="admin" autocomplete="username" />
-      <label>Password</label>
-      <input id="lPass" type="password" autocomplete="current-password" placeholder="password: ADMIN336" />
-      <p class="err" id="lErr"></p>
-      <button class="primary" id="lBtn">Log in</button>
+      <div id="serverWarn" class="warn hidden"></div>
+      <input id="u" placeholder="Username" value="admin">
+      <input id="pw" type="password" placeholder="Password" value="ADMIN336">
+      <button id="loginBtn">Log in</button>
+      <p class="muted" style="margin-top:10px">Default: admin / ADMIN336</p>
     </div>
   </div>
 
-  <div class="wrap">
-    <header class="bar">
-      <div>
-        <h1>zhongkeyu · Admin</h1>
-        <div class="meta">Messages inbox &amp; product catalog manager.</div>
-      </div>
-      <div class="actions">
-        <a class="btn" href="/">View Site</a>
-        <button class="btn primary" id="exportBtn">Export Messages CSV</button>
-        <button class="btn" id="logoutBtn">Log out</button>
-      </div>
-    </header>
+  <header class="adm hidden" id="admHeader">
+    <div class="brand">ONEWORLD · Admin</div>
+    <button id="logoutBtn">Logout</button>
+  </header>
+  <nav class="tabs hidden" id="tabs">
+    <button data-tab="content" class="active">Content / Header / Footer</button>
+    <button data-tab="banners">Banners</button>
+    <button data-tab="blog">Blog</button>
+    <button data-tab="products">Products</button>
+    <button data-tab="quotes">Quotes (RFQ)</button>
+    <button data-tab="messages">Messages</button>
+  </nav>
+  <main id="main" class="hidden"></main>
 
-    <div class="tabs">
-      <button class="tab active" data-tab="messages">Messages <span class="count" id="count">0</span></button>
-      <button class="tab" data-tab="products">Products</button>
-    </div>
+<script>
+(function () {
+  'use strict';
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  let MEM_TOKEN = localStorage.getItem('ow_admin_token') || '';
+  const apiFetch = async (url, opts = {}) => {
+    opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    if (MEM_TOKEN) opts.headers['X-Admin-Token'] = MEM_TOKEN;
+    let u = url + (url.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(MEM_TOKEN);
+    const r = await fetch(u, opts);
+    if (r.status === 401) { alert('Session expired, please login again.'); location.reload(); throw new Error('401'); }
+    return r;
+  };
 
-    <section id="tab-messages">
-      <div class="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th><th>Name</th><th>Email</th><th>Phone / WhatsApp</th>
-              <th>Company</th><th>Country</th><th>Product</th><th>Budget</th><th>Message</th>
-            </tr>
-          </thead>
-          <tbody id="rows"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section id="tab-products" class="hidden">
-      <div class="card">
-        <h3 id="prodFormTitle">Add Product</h3>
-        <input type="hidden" id="pId" />
-        <div class="form-grid">
-          <div>
-            <label>Name *</label>
-            <input id="pName" placeholder="e.g. Wireless Earbuds Pro" />
-          </div>
-          <div>
-            <label>Price</label>
-            <input id="pPrice" placeholder="e.g. from $6.9/unit" />
-          </div>
-          <div class="full">
-            <label>Description</label>
-            <input id="pDesc" placeholder="e.g. ANC, 32h battery, IPX5" />
-          </div>
-          <div class="full">
-            <label>Image</label>
-            <input id="pImageFile" type="file" accept="image/*" />
-            <div class="imgprev" id="pImgPrev"></div>
-          </div>
-        </div>
-        <div class="actions" style="margin-top:14px">
-          <button class="primary" id="pSave">Save Product</button>
-          <button id="pCancel" class="hidden">Cancel</button>
-        </div>
-        <p id="pStatus" class="meta"></p>
-      </div>
-      <h3>Current Catalog</h3>
-      <div class="prod-list" id="prodList"></div>
-    </section>
-  </div>
-
-  <script>
-    // Surface any script error on the page instead of failing silently.
-    window.addEventListener('error', function (ev) {
-      var b = document.getElementById('lErr');
-      if (b) b.textContent = '页面脚本出错：' + (ev.message || (ev.error && ev.error.message) || 'unknown');
+  // boot check
+  (function bootCheck() {
+    fetch('/api/health').then(r => r.json()).then(j => {
+      if (!j.ok) throw new Error('no health');
+    }).catch(() => {
+      const w = document.getElementById('serverWarn');
+      w.classList.remove('hidden');
+      w.innerHTML = '⚠️ Cannot reach the live server. Open this page from your deployed domain (e.g. your-site.vercel.app/admin), not the local file preview.';
     });
+  })();
 
-    // ---------- Auth (cookie + token; proxy-safe) ----------
-    // Use an in-memory token as the primary store so login still works even if
-    // the embedded/preview browser blocks localStorage/sessionStorage access
-    // (a common cause of "login returns ok but the UI never updates").
-    let MEM_TOKEN = '';
-    const TOKEN_KEY = 'zhongkeyu_admin_token';
-    function getToken() {
-      try {
-        if (MEM_TOKEN) return MEM_TOKEN;
-        if (typeof localStorage !== 'undefined') return localStorage.getItem(TOKEN_KEY) || '';
-      } catch (e) {}
-      return MEM_TOKEN;
+  // login
+  document.getElementById('loginBtn').onclick = async () => {
+    const u = document.getElementById('u').value, pw = document.getElementById('pw').value;
+    const r = await fetch('/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username:u, password:pw }) });
+    const j = await r.json();
+    if (j.ok) {
+      MEM_TOKEN = j.token; localStorage.setItem('ow_admin_token', MEM_TOKEN);
+      document.getElementById('login').classList.add('hidden');
+      ['admHeader','tabs','main'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+      loadTab('content');
+    } else { alert('Wrong password.'); }
+  };
+  document.getElementById('logoutBtn').onclick = async () => {
+    await fetch('/admin/logout', { method:'POST' });
+    MEM_TOKEN = ''; localStorage.removeItem('ow_admin_token'); location.reload();
+  };
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active'); loadTab(b.dataset.tab);
+  });
+
+  const main = document.getElementById('main');
+  async function loadTab(tab) {
+    if (tab === 'content') return renderContent();
+    if (tab === 'banners') return renderBanners();
+    if (tab === 'blog') return renderBlog();
+    if (tab === 'products') return renderProducts();
+    if (tab === 'quotes') return renderQuotes();
+    if (tab === 'messages') return renderMessages();
+  }
+
+  // ---------- Content (header/footer/sections) ----------
+  async function renderContent() {
+    const list = await (await apiFetch('/api/content')).json();
+    let html = '<h3>Editable Content Blocks (header / footer / hero / about / factory / contact)</h3>';
+    html += '<div class="panel"><p class="muted">Each block holds a title, text (body), an image URL and a link URL. The front-end reads these live.</p>';
+    for (const b of list) {
+      html += `<div class="panel" data-key="${esc(b.key)}">
+        <div class="row"><div><label>Key</label><span class="pill">${esc(b.key)}</span></div>
+        <div><label>Title</label><input data-f="title" value="${esc(b.title)}"></div></div>
+        <label>Body / Text</label><textarea data-f="body">${esc(b.body)}</textarea>
+        <div class="row"><div><label>Image URL</label><input data-f="image_url" value="${esc(b.image_url)}"></div>
+        <div><label>Link URL</label><input data-f="link_url" value="${esc(b.link_url)}"></div></div>
+        <button class="btn s" onclick="saveBlock('${esc(b.key)}')">Save</button>
+        <span id="st_${esc(b.key)}"></span>
+      </div>`;
     }
-    function setToken(t) {
-      MEM_TOKEN = t || '';
-      try {
-        if (typeof localStorage !== 'undefined') {
-          if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY);
-        }
-      } catch (e) {}
+    html += '</div>';
+    main.innerHTML = html;
+  }
+  window.saveBlock = async (key) => {
+    const panel = document.querySelector(`[data-key="${key}"]`);
+    const get = (f) => panel.querySelector(`[data-f="${f}"]`).value;
+    const body = { key, title:get('title'), body:get('body'), image_url:get('image_url'), link_url:get('link_url') };
+    const r = await apiFetch('/api/content', { method:'PUT', body: JSON.stringify(body) });
+    const st = document.getElementById('st_' + key);
+    st.textContent = r.ok ? ' ✓ saved' : ' ✗ failed'; st.className = r.ok ? 'ok' : '';
+    setTimeout(() => st.textContent = '', 2000);
+  };
+
+  // ---------- Banners ----------
+  async function renderBanners() {
+    const list = await (await apiFetch('/api/banners')).json();
+    let html = '<h3>Banners (home carousel)</h3><div class="panel"><h4>Add / Edit Banner</h4>';
+    html += `<div class="row"><div><label>ID (leave for new)</label><input id="b_id" placeholder="auto"></div>
+      <div><label>Title</label><input id="b_title"></div></div>
+      <label>Image URL</label><input id="b_img">
+      <label>Link URL</label><input id="b_link" placeholder="/#/products">
+      <div class="row"><div><label>Sort order</label><input id="b_sort" type="number" value="0"></div>
+      <div><label>Active</label><select id="b_active"><option value="true">Yes</option><option value="false">No</option></select></div></div>
+      <button class="btn" onclick="saveBanner()">Add Banner</button></div>`;
+    html += '<table><tr><th>Image</th><th>Title</th><th>Link</th><th>Sort</th><th>Active</th><th>Action</th></tr>';
+    for (const b of list) {
+      html += `<tr><td>${b.image_url?`<img class="thumb" src="${esc(b.image_url)}">`:''}</td>
+        <td>${esc(b.title)}</td><td>${esc(b.link_url)}</td><td>${b.sort_order}</td><td>${b.active?'✅':'❌'}</td>
+        <td><button class="btn d" onclick="delBanner('${esc(b.id)}')">Delete</button></td></tr>`;
     }
+    html += '</table>';
+    main.innerHTML = html;
+  }
+  window.saveBanner = async () => {
+    const b = { title:document.getElementById('b_title').value, image_url:document.getElementById('b_img').value,
+      link_url:document.getElementById('b_link').value, sort_order:Number(document.getElementById('b_sort').value)||0,
+      active: document.getElementById('b_active').value === 'true' };
+    const id = document.getElementById('b_id').value.trim(); if (id) b.id = id;
+    await apiFetch('/api/banners', { method:'POST', body: JSON.stringify(b) }); renderBanners();
+  };
+  window.delBanner = async (id) => { if (confirm('Delete this banner?')) { await apiFetch('/api/banners/'+id, { method:'DELETE' }); renderBanners(); } };
 
-    function showLogin(msg) {
-      document.getElementById('login').classList.remove('hidden');
-      if (msg) document.getElementById('lErr').textContent = msg;
+  // ---------- Blog ----------
+  async function renderBlog() {
+    const list = await (await apiFetch('/api/blog')).json();
+    let html = '<h3>Blog / News</h3><div class="panel"><h4>Add Post</h4>';
+    html += `<label>Slug (unique, optional)</label><input id="p_slug" placeholder="my-post-title">
+      <label>Title</label><input id="p_title">
+      <label>Excerpt</label><textarea id="p_excerpt"></textarea>
+      <label>Cover Image URL</label><input id="p_img">
+      <label>Body</label><textarea id="p_body" style="min-height:160px"></textarea>
+      <div class="row"><div><label>Published date</label><input id="p_date" type="date"></div>
+      <div><label>Active</label><select id="p_active"><option value="true">Yes</option><option value="false">No</option></select></div></div>
+      <button class="btn" onclick="savePost()">Add Post</button></div>`;
+    html += '<table><tr><th>Cover</th><th>Title</th><th>Date</th><th>Active</th><th>Action</th></tr>';
+    for (const p of list) {
+      html += `<tr><td>${p.cover_image?`<img class="thumb" src="${esc(p.cover_image)}">`:''}</td>
+        <td>${esc(p.title)}</td><td>${esc((p.published_at||'').slice(0,10))}</td><td>${p.active?'✅':'❌'}</td>
+        <td><button class="btn d" onclick="delPost('${esc(p.id)}')">Delete</button></td></tr>`;
     }
-    function hideLogin() { document.getElementById('login').classList.add('hidden'); }
+    html += '</table>';
+    main.innerHTML = html;
+  }
+  window.savePost = async () => {
+    const date = document.getElementById('p_date').value || new Date().toISOString().slice(0,10);
+    const p = { slug:document.getElementById('p_slug').value.trim(), title:document.getElementById('p_title').value,
+      excerpt:document.getElementById('p_excerpt').value, cover_image:document.getElementById('p_img').value,
+      body:document.getElementById('p_body').value, published_at:date, active: document.getElementById('p_active').value === 'true' };
+    await apiFetch('/api/blog', { method:'POST', body: JSON.stringify(p) }); renderBlog();
+  };
+  window.delPost = async (id) => { if (confirm('Delete this post?')) { await apiFetch('/api/blog/'+id, { method:'DELETE' }); renderBlog(); } };
 
-    document.getElementById('lBtn').addEventListener('click', doLogin);
-    document.getElementById('lPass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
-    async function doLogin() {
-      const u = document.getElementById('lUser').value.trim() || 'admin';
-      const p = document.getElementById('lPass').value;
-      if (!p) { document.getElementById('lErr').textContent = 'Password required.'; return; }
-      document.getElementById('lErr').textContent = '';
-      try {
-        const res = await fetch('/admin/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: u, password: p }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.ok) {
-          setToken(data.token);
-          document.getElementById('lPass').value = '';
-          hideLogin();
-          loadMessages();
-          if (document.querySelector('.tab.active') && document.querySelector('.tab.active').dataset.tab === 'products') loadProducts();
-        } else {
-          document.getElementById('lErr').textContent = 'Wrong password.';
-        }
-      } catch (e) {
-        document.getElementById('lErr').textContent = 'Cannot reach server. Open this page from the live site (http://localhost:8787/admin), not the static preview.';
-      }
+  // ---------- Products ----------
+  async function renderProducts() {
+    const list = await (await apiFetch('/api/products')).json();
+    let html = '<h3>Products</h3><div class="panel"><h4>Add / Edit Product</h4>';
+    html += `<div class="row"><div><label>ID (leave for new)</label><input id="pr_id" placeholder="auto"></div>
+      <div><label>Name *</label><input id="pr_name"></div></div>
+      <label>Description</label><textarea id="pr_desc"></textarea>
+      <div class="row"><div><label>Image URL</label><input id="pr_img"></div>
+      <div><label>Price</label><input id="pr_price" placeholder="optional"></div>
+      <div><label>Sort</label><input id="pr_sort" type="number" value="0"></div></div>
+      <button class="btn" onclick="saveProduct()">Add Product</button></div>`;
+    html += '<table><tr><th>Image</th><th>Name</th><th>Description</th><th>Action</th></tr>';
+    for (const p of list) {
+      html += `<tr><td>${p.image?`<img class="thumb" src="${esc(p.image)}">`:''}</td>
+        <td>${esc(p.name)}</td><td class="muted">${esc((p.desc||'').slice(0,60))}</td>
+        <td><button class="btn d" onclick="delProduct('${esc(p.id)}')">Delete</button></td></tr>`;
     }
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      setToken('');
-      try { await fetch('/admin/logout', { method: 'POST' }); } catch (e) {}
-      showLogin('Logged out.');
-    });
+    html += '</table>';
+    main.innerHTML = html;
+  }
+  window.saveProduct = async () => {
+    const p = { name:document.getElementById('pr_name').value.trim(), desc:document.getElementById('pr_desc').value,
+      image:document.getElementById('pr_img').value, price:document.getElementById('pr_price').value,
+      sort_order:Number(document.getElementById('pr_sort').value)||0 };
+    if (!p.name) return alert('Name is required');
+    const id = document.getElementById('pr_id').value.trim(); if (id) p.id = id;
+    await apiFetch('/api/products', { method:'POST', body: JSON.stringify(p) }); renderProducts();
+  };
+  window.delProduct = async (id) => { if (confirm('Delete this product?')) { await apiFetch('/api/products/'+id, { method:'DELETE' }); renderProducts(); } };
 
-    // Fetch wrapper — attaches the session token BOTH as a header and as a URL
-    // query param. Some embedded/preview browsers strip custom headers, so the
-    // query param is the reliable fallback.
-    async function apiFetch(url, opts = {}) {
-      opts.headers = Object.assign({}, opts.headers);
-      const t = getToken();
-      if (t) {
-        opts.headers['X-Admin-Token'] = t;
-        const sep = url.includes('?') ? '&' : '?';
-        url = url + sep + 'token=' + encodeURIComponent(t);
-      }
-      const res = await fetch(url, opts);
-      if (res.status === 401) { setToken(''); showLogin('Session expired or wrong password.'); throw new Error('unauthorized'); }
-      return res;
+  // ---------- Quotes ----------
+  async function renderQuotes() {
+    const list = await (await apiFetch('/admin/api/quotes')).json();
+    let html = '<h3>Buyer Quotes (RFQ)</h3>';
+    html += `<p><a class="btn g" href="/admin/api/export/quotes?token=${encodeURIComponent(MEM_TOKEN)}">Export CSV</a></p>`;
+    html += '<table><tr><th>Date</th><th>Name</th><th>Email</th><th>Company</th><th>Product</th><th>Message</th><th>Budget</th><th>Action</th></tr>';
+    for (const q of list) {
+      html += `<tr><td class="muted">${esc((q.createdAt||'').slice(0,10))}</td><td>${esc(q.name)}</td><td>${esc(q.email)}</td>
+        <td>${esc(q.company||'')}</td><td>${esc(q.product||'')}</td><td class="muted">${esc((q.message||'').slice(0,40))}</td>
+        <td>${esc(q.budget||'')}</td><td><button class="btn d" onclick="delQuote('${esc(q.id)}')">Delete</button></td></tr>`;
     }
+    if (!list.length) html += '<tr><td colspan="8" class="muted">No quotes yet.</td></tr>';
+    html += '</table>';
+    main.innerHTML = html;
+  }
+  window.delQuote = async (id) => { if (confirm('Delete this quote?')) { await apiFetch('/admin/api/quotes/'+id, { method:'DELETE' }); renderQuotes(); } };
 
-    // ---------- Tabs ----------
-    document.querySelectorAll('.tab').forEach((t) => {
-      t.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));
-        t.classList.add('active');
-        const tab = t.dataset.tab;
-        document.getElementById('tab-messages').classList.toggle('hidden', tab !== 'messages');
-        document.getElementById('tab-products').classList.toggle('hidden', tab !== 'products');
-        if (tab === 'products') loadProducts();
-      });
-    });
-
-    // ---------- Messages ----------
-    const fmt = (iso) => { try { return new Date(iso).toLocaleString(); } catch { return iso || ''; } };
-    async function loadMessages() {
-      try {
-        const res = await apiFetch('/admin/api/messages');
-        const data = await res.json();
-        document.getElementById('count').textContent = data.length;
-        const rows = document.getElementById('rows');
-        if (!data.length) { rows.innerHTML = '<tr><td colspan="9" class="empty">No messages yet.</td></tr>'; return; }
-        rows.innerHTML = data.map((m) => `
-          <tr>
-            <td>${fmt(m.createdAt)}</td><td>${m.name || ''}</td>
-            <td><a href="mailto:${m.email}">${m.email || ''}</a></td><td>${m.phone || ''}</td>
-            <td>${m.company || '—'}</td><td>${m.country || '—'}</td>
-            <td>${m.product || '—'}</td><td>${m.budget || '—'}</td>
-            <td class="msg">${m.message || ''}</td>
-          </tr>`).join('');
-      } catch (e) { if (e.message !== 'unauthorized') document.getElementById('rows').innerHTML = '<tr><td colspan="9" class="empty err">Failed to load messages.</td></tr>'; }
+  // ---------- Messages ----------
+  async function renderMessages() {
+    const list = await (await apiFetch('/admin/api/messages')).json();
+    let html = '<h3>Contact Messages</h3>';
+    html += `<p><a class="btn g" href="/admin/api/export/messages?token=${encodeURIComponent(MEM_TOKEN)}">Export CSV</a></p>`;
+    html += '<table><tr><th>Date</th><th>Name</th><th>Email</th><th>Phone</th><th>Message</th><th>Action</th></tr>';
+    for (const m of list) {
+      html += `<tr><td class="muted">${esc((m.createdAt||'').slice(0,10))}</td><td>${esc(m.name)}</td><td>${esc(m.email)}</td>
+        <td>${esc(m.phone||'')}</td><td class="muted">${esc((m.message||'').slice(0,50))}</td>
+        <td><button class="btn d" onclick="delMessage('${esc(m.id)}')">Delete</button></td></tr>`;
     }
-
-    // Export via authenticated download
-    document.getElementById('exportBtn').addEventListener('click', async () => {
-      try {
-        const res = await apiFetch('/admin/api/export');
-        const text = await res.text();
-        const blob = new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'messages.csv'; a.click();
-        URL.revokeObjectURL(url);
-      } catch (e) { /* handled by apiFetch */ }
-    });
-
-    // ---------- Products ----------
-    let pendingImage = '';
-    document.getElementById('pImageFile').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) { pendingImage = ''; document.getElementById('pImgPrev').textContent = ''; return; }
-      const reader = new FileReader();
-      reader.onload = () => { pendingImage = reader.result; document.getElementById('pImgPrev').textContent = 'Image loaded (' + Math.round(reader.result.length / 1024) + ' KB).'; };
-      reader.readAsDataURL(file);
-    });
-
-    async function loadProducts() {
-      try {
-        const res = await fetch('/api/products'); // public
-        const list = await res.json();
-        const box = document.getElementById('prodList');
-        if (!list.length) { box.innerHTML = '<p class="meta">No products yet.</p>'; return; }
-        box.innerHTML = list.map((p) => `
-          <div class="prod-item">
-            ${p.image ? `<img src="${p.image}" alt="${p.name}" />` : '<div style="height:120px;display:grid;place-items:center;background:#f1f5f9;border-radius:8px">📦</div>'}
-            <div class="pname">${p.name}</div>
-            <div class="meta">${p.desc || ''}</div>
-            <div class="pprice">${p.price || ''}</div>
-            <div class="row">
-              <button data-edit="${p.id}">Edit</button>
-              <button data-del="${p.id}">Delete</button>
-            </div>
-          </div>`).join('');
-        box.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => editProduct(b.dataset.edit, list)));
-        box.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', () => delProduct(b.dataset.del)));
-      } catch (e) { document.getElementById('prodList').innerHTML = '<p class="meta err">Failed to load products.</p>'; }
-    }
-
-    function editProduct(id, list) {
-      const p = list.find((x) => x.id === id);
-      if (!p) return;
-      document.getElementById('pId').value = p.id;
-      document.getElementById('pName').value = p.name;
-      document.getElementById('pPrice').value = p.price || '';
-      document.getElementById('pDesc').value = p.desc || '';
-      pendingImage = p.image || '';
-      document.getElementById('pImgPrev').textContent = p.image ? 'Keep existing image (re-select to replace).' : '';
-      document.getElementById('prodFormTitle').textContent = 'Edit Product';
-      document.getElementById('pCancel').classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    document.getElementById('pCancel').addEventListener('click', resetProdForm);
-    function resetProdForm() {
-      document.getElementById('pId').value = '';
-      document.getElementById('pName').value = '';
-      document.getElementById('pPrice').value = '';
-      document.getElementById('pDesc').value = '';
-      document.getElementById('pImageFile').value = '';
-      pendingImage = '';
-      document.getElementById('pImgPrev').textContent = '';
-      document.getElementById('prodFormTitle').textContent = 'Add Product';
-      document.getElementById('pCancel').classList.add('hidden');
-    }
-
-    document.getElementById('pSave').addEventListener('click', async () => {
-      const status = document.getElementById('pStatus');
-      const name = document.getElementById('pName').value.trim();
-      if (!name) { status.textContent = 'Name is required.'; status.className = 'meta err'; return; }
-      const body = {
-        id: document.getElementById('pId').value || undefined,
-        name,
-        desc: document.getElementById('pDesc').value.trim(),
-        price: document.getElementById('pPrice').value.trim(),
-        image: pendingImage,
-      };
-      try {
-        const res = await apiFetch('/api/products', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        const out = await res.json();
-        if (res.ok && out.ok) {
-          status.textContent = 'Saved ✓'; status.className = 'meta';
-          resetProdForm(); loadProducts();
-        } else {
-          status.textContent = out.error || 'Save failed.'; status.className = 'meta err';
-        }
-      } catch (e) {
-        if (e.message !== 'unauthorized') { status.textContent = 'Network error — are you on the live site?'; status.className = 'meta err'; }
-      }
-    });
-
-    async function delProduct(id) {
-      if (!confirm('Delete this product?')) return;
-      try { await apiFetch('/api/products/' + id, { method: 'DELETE' }); loadProducts(); }
-      catch (e) { /* handled */ }
-    }
-
-    // ---------- Boot ----------
-    // Self-check: is this page actually served by the live Node server?
-    (function bootCheck() {
-      const warn = (msg) => {
-        const w = document.getElementById('serverWarn');
-        w.classList.remove('hidden');
-        w.innerHTML = msg;
-      };
-      const proto = location.protocol;
-      const host = location.hostname || '';
-      // static file / preview protocols can never reach the API
-      if (proto === 'file:' || host.includes('static-html') || host === '') {
-        warn('⚠️ This page is <b>not</b> running on the live server, so login &amp; upload will not work.<br>Open <b>http://localhost:8787/admin</b> in your browser (not the file/static preview).');
-        return;
-      }
-      fetch('/api/health')
-        .then((r) => {
-          if (!r.ok) {
-            warn('⚠️ Cannot reach the server. Please refresh, or open <b>http://localhost:8787/admin</b> if running locally.');
-          }
-        })
-        .catch(() => {
-          warn('⚠️ Cannot reach the server. Please refresh, or open <b>http://localhost:8787/admin</b> if running locally.');
-        });
-    })();
-
-    // Boot: if we already have a session token, try to resume; otherwise just show login.
-    (async function boot() {
-      if (!getToken()) { showLogin(); return; }
-      try {
-        const r = await apiFetch('/admin/api/messages');
-        if (r.ok) { hideLogin(); loadMessages(); }
-        else { setToken(''); showLogin(); }
-      } catch { setToken(''); showLogin(); }
-    })();
-  </script>
+    if (!list.length) html += '<tr><td colspan="6" class="muted">No messages yet.</td></tr>';
+    html += '</table>';
+    main.innerHTML = html;
+  }
+  window.delMessage = async (id) => { if (confirm('Delete this message?')) { await apiFetch('/admin/api/messages/'+id, { method:'DELETE' }); renderMessages(); } };
+})();
+</script>
 </body>
 </html>
