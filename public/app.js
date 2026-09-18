@@ -308,6 +308,11 @@
     }));
   }
 
+  async function parseRes(r) {
+    const text = await r.text();
+    try { return JSON.parse(text); } catch { return { ok: false, error: text || ('HTTP ' + r.status) }; }
+  }
+
   function bindForms() {
     const qf = document.getElementById('quoteForm');
     if (qf) qf.addEventListener('submit', async (e) => {
@@ -316,10 +321,10 @@
       const msg = document.getElementById('quoteMsg');
       try {
         const r = await fetch('/api/quotes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-        const j = await r.json();
+        const j = await parseRes(r);
         if (j.ok) { msg.className = 'ok-msg'; msg.textContent = 'Thank you! Your quote request has been received.'; qf.reset(); }
         else { msg.className = 'err-msg'; msg.textContent = j.error || 'Submission failed.'; }
-      } catch { msg.className = 'err-msg'; msg.textContent = 'Network error, please try again.'; }
+      } catch (e) { msg.className = 'err-msg'; msg.textContent = 'Network error: ' + e.message; }
     });
     const mf = document.getElementById('msgForm');
     if (mf) mf.addEventListener('submit', async (e) => {
@@ -328,10 +333,10 @@
       const msg = document.getElementById('msgMsg');
       try {
         const r = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-        const j = await r.json();
+        const j = await parseRes(r);
         if (j.ok) { msg.className = 'ok-msg'; msg.textContent = 'Thank you! Your message has been sent.'; mf.reset(); }
         else { msg.className = 'err-msg'; msg.textContent = j.error || 'Submission failed.'; }
-      } catch { msg.className = 'err-msg'; msg.textContent = 'Network error, please try again.'; }
+      } catch (e) { msg.className = 'err-msg'; msg.textContent = 'Network error: ' + e.message; }
     });
     const nt = document.getElementById('navToggle');
     if (nt) nt.addEventListener('click', () => document.getElementById('navMain').classList.toggle('open'));
