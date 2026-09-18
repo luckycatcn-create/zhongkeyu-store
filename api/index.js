@@ -224,4 +224,16 @@ function exportCsv(res, rows, fields, filename) {
   } catch (e) { res.status(500).json({ error: e.message }); }
 }
 
+// ---------- global error handler (prevents empty 500 responses) ----------
+app.use((err, req, res, next) => {
+  console.error('[global error]', req.method, req.url, err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ ok: false, error: err && err.message ? err.message : 'Server error, please try again later' });
+});
+
+// ---------- SPA fallback for unknown routes ----------
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
 module.exports = app;
