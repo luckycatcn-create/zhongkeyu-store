@@ -34,6 +34,19 @@ const QUOTE_FIELDS = ['name', 'email', 'phone', 'company', 'country', 'product',
 // ---------- health check ----------
 app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
+// ---------- db connection status (so admin can detect a missing key) ----------
+app.get('/api/db-status', (req, res) => res.json(db.dbStatus()));
+
+// ---------- image upload to Supabase Storage ----------
+app.post('/api/upload', checkAuth, async (req, res) => {
+  const b = req.body || {};
+  if (!b.data) return res.status(400).json({ ok: false, error: 'No file data provided' });
+  try {
+    const url = await db.uploadImage({ folder: b.folder, filename: b.filename, contentType: b.contentType, data: b.data });
+    res.json({ ok: true, url });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
 // ---------- public content (all editable blocks) ----------
 app.get('/api/content', async (req, res) => {
   try { res.json(await db.readContent()); }
