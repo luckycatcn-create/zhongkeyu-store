@@ -1,5 +1,5 @@
 // Vercel serverless entry. Exports the Express app (no listen, no static —
-// Vercel serves public/ as static files and rewrites /api & /admin/api here).
+// Vercel serves public/ as static files and rewrites all traffic here).
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
@@ -7,16 +7,13 @@ const db = require('../db');
 
 const app = express();
 
-// Admin password. The deploy sandbox may inject ADMIN_PASSWORD; if it does and
-// you want to honor it, it would override here. Kept fixed to avoid lockouts.
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ADMIN336';
 
-// CORS — the WorkBuddy built-in (preview) browser may load the page from a
-// different origin than the API; without this the login POST is blocked.
+// CORS — built-in preview browser may load the page from a different origin.
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin) res.set('Access-Control-Allow-Origin', origin);
-  res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Token, Authorization');
   res.set('Access-Control-Allow-Credentials', 'true');
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -24,38 +21,95 @@ app.use((req, res, next) => {
 });
 
 // Serve the static front-end from this function so the home page and assets work
-// regardless of the Vercel framework preset (the Express preset does NOT auto-
-// serve public/ as static files, which is why "/" returned 404).
+// regardless of the Vercel framework preset.
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 app.use(express.static(PUBLIC_DIR));
 
-// Allow large product images (base64 data URLs).
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-const FIELDS = ['name', 'email', 'phone', 'message', 'company', 'country', 'product', 'budget'];
-const REQUIRED = ['name', 'email', 'phone', 'message'];
+const CONTACT_FIELDS = ['name', 'email', 'phone', 'message', 'company', 'country', 'product', 'budget'];
+const QUOTE_FIELDS = ['name', 'email', 'phone', 'company', 'country', 'product', 'message', 'budget'];
 
-// ---------- health check (used by admin.html boot test) ----------
+// ---------- health check ----------
 app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
-// ---------- public: contact form ----------
+// ---------- public content (all editable blocks) ----------
+app.get('/api/content', async (req, res) => {
+  try { res.json(await db.readContent()); }
+  catch (e) { console.error('[content]', e); res.json([]); }
+});
+app.put('/api/content', checkAuth, async (req, res) => {
+  const b = req.body || {};
+  if (!b.key) return res.status(400).json({ ok: false, error: 'key is required' });
+  try { res.json({ ok: true, block: await db.upsertContent(b) }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// ---------- banners ----------
+app.get('/api/banners', async (req, res) => {
+  try { res.json(await db.readBanners()); }
+  catch (e) { console.error('[banners]', e); res.json([]); }
+});
+app.post('/api/banners', checkAuth, async (req, res) => {
+  const b = req.body || {};
+  b.id = b.id || crypto.randomUUID();
+  try { res.json({ ok: true, banner: await db.upsertBanner(b) }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+app.delete('/api/banners/:id', checkAuth, async (req, res) => {
+  try { await db.deleteBanner(req.params.id); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// ---------- blog ----------
+app.get('/api/blog', async (req, res) => {
+  try { res.json(await db.readBlog()); }
+  catch (e) { console.error('[blog]', e); res.json([]); }
+});
+app.get('/api/blog/:slug', async (req, res) => {
+  try {
+    const post = await db.readBlogPost(req.params.slug);
+    if (!post) return res.status(404).json({ error: 'not found' });
+    res.json(post);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/blog', checkAuth, async (req, res) => {
+  const b = req.body || {};
+  if (!b.title) return res.status(400).json({ ok: false, error: 'title is required' });
+  b.id = b.id || crypto.randomUUID();
+  if (!b.slug) b.slug = (b.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Date.now().toString(36);
+  if (b.active === undefined) b.active = true;
+  try { res.json({ ok: true, post: await db.upsertBlog(b) }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+app.delete('/api/blog/:id', checkAuth, async (req, res) => {
+  try { await db.deleteBlog(req.params.id); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// ---------- public: contact message ----------
 app.post('/api/contact', async (req, res) => {
   const body = req.body || {};
   const record = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-  for (const f of FIELDS) record[f] = (body[f] || '').toString().trim();
-  const missing = REQUIRED.filter((f) => !record[f]);
+  for (const f of CONTACT_FIELDS) record[f] = (body[f] || '').toString().trim();
+  const missing = ['name', 'email', 'phone', 'message'].filter((f) => !record[f]);
   if (missing.length) return res.status(400).json({ ok: false, error: 'Missing required field(s): ' + missing.join(', ') });
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email)) {
-    return res.status(400).json({ ok: false, error: 'Invalid email address' });
-  }
-  try {
-    await db.addMessage(record);
-    res.json({ ok: true, id: record.id });
-  } catch (e) {
-    console.error('[contact] write error:', e);
-    res.status(500).json({ ok: false, error: 'Server error, please try again later' });
-  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email)) return res.status(400).json({ ok: false, error: 'Invalid email address' });
+  try { await db.addMessage(record); res.json({ ok: true, id: record.id }); }
+  catch (e) { console.error('[contact]', e); res.status(500).json({ ok: false, error: 'Server error, please try again later' }); }
+});
+
+// ---------- public: buyer quote / RFQ ----------
+app.post('/api/quotes', async (req, res) => {
+  const body = req.body || {};
+  const record = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+  for (const f of QUOTE_FIELDS) record[f] = (body[f] || '').toString().trim();
+  const missing = ['name', 'email'].filter((f) => !record[f]);
+  if (missing.length) return res.status(400).json({ ok: false, error: 'Missing required field(s): ' + missing.join(', ') });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email)) return res.status(400).json({ ok: false, error: 'Invalid email address' });
+  try { await db.addQuote(record); res.json({ ok: true, id: record.id }); }
+  catch (e) { console.error('[quotes]', e); res.status(500).json({ ok: false, error: 'Server error, please try again later' }); }
 });
 
 // ---------- auth ----------
@@ -101,42 +155,29 @@ app.post('/admin/logout', (req, res) => {
   res.json({ ok: true });
 });
 
-// Admin page (also served as static public/admin.html on Vercel; kept here for local dev).
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'admin.html')));
 
 // ---------- admin: messages ----------
 app.get('/admin/api/messages', checkAuth, async (req, res) => {
-  try {
-    res.json(await db.readMessages());
-  } catch (e) {
-    console.error('[messages] read error:', e);
-    res.json([]); // graceful fallback
-  }
+  try { res.json(await db.readMessages()); } catch (e) { console.error('[messages]', e); res.json([]); }
 });
+app.delete('/admin/api/messages/:id', checkAuth, async (req, res) => {
+  try { await db.deleteMessage(req.params.id); res.json({ ok: true }); } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+app.get('/admin/api/export/messages', checkAuth, async (req, res) => { exportCsv(res, await db.readMessages(), CONTACT_FIELDS, 'messages.csv'); });
 
-app.get('/admin/api/export', checkAuth, async (req, res) => {
-  try {
-    const msgs = await db.readMessages();
-    const header = ['id', 'createdAt', ...FIELDS];
-    const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-    const rows = msgs.map((m) => header.map((h) => esc(m[h])).join(','));
-    const csv = [header.join(','), ...rows].join('\n');
-    res.set('Content-Type', 'text/csv; charset=utf-8');
-    res.set('Content-Disposition', 'attachment; filename="messages.csv"');
-    res.send('﻿' + csv);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+// ---------- admin: quotes ----------
+app.get('/admin/api/quotes', checkAuth, async (req, res) => {
+  try { res.json(await db.readQuotes()); } catch (e) { console.error('[quotes]', e); res.json([]); }
 });
+app.delete('/admin/api/quotes/:id', checkAuth, async (req, res) => {
+  try { await db.deleteQuote(req.params.id); res.json({ ok: true }); } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+app.get('/admin/api/export/quotes', checkAuth, async (req, res) => { exportCsv(res, await db.readQuotes(), QUOTE_FIELDS, 'quotes.csv'); });
 
 // ---------- products (public read, admin write) ----------
 app.get('/api/products', async (req, res) => {
-  try {
-    res.json(await db.readProducts());
-  } catch (e) {
-    console.error('[products] read error:', e);
-    res.json([]); // graceful fallback so the page keeps working
-  }
+  try { res.json(await db.readProducts()); } catch (e) { console.error('[products]', e); res.json([]); }
 });
 app.post('/api/products', checkAuth, async (req, res) => {
   const body = req.body || {};
@@ -148,18 +189,26 @@ app.post('/api/products', checkAuth, async (req, res) => {
     desc: (body.desc || '').toString().trim(),
     price: (body.price || '').toString().trim(),
     image: (body.image || '').toString().trim(),
+    sort_order: Number(body.sort_order) || 0,
   };
-  try {
-    const saved = await db.upsertProduct(product);
-    res.json({ ok: true, product: saved });
-  } catch (e) {
-    console.error('[products] upsert error:', e);
-    res.status(500).json({ ok: false, error: e.message });
-  }
+  try { res.json({ ok: true, product: await db.upsertProduct(product) }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 app.delete('/api/products/:id', checkAuth, async (req, res) => {
   try { await db.deleteProduct(req.params.id); res.json({ ok: true }); }
   catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
+
+// ---------- CSV export helper ----------
+function exportCsv(res, rows, fields, filename) {
+  try {
+    const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const data = rows.map((r) => fields.map((f) => esc(r[f])).join(','));
+    const csv = [fields.join(','), ...data].join('\n');
+    res.set('Content-Type', 'text/csv; charset=utf-8');
+    res.set('Content-Disposition', 'attachment; filename="' + filename + '"');
+    res.send('﻿' + csv);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+}
 
 module.exports = app;
