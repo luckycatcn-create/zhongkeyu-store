@@ -1,11 +1,10 @@
 {
-  "name": "zhongkeyu-site",
+  "name": "oneworld-site",
   "version": "1.0.0",
-  "description": "zhongkeyu cross-border e-commerce site — static front end + admin backend on Vercel (Serverless Functions + Supabase)",
+  "description": "ONEWORLD clone — static front end + CMS admin on Vercel (Serverless Functions + Supabase)",
   "main": "api/index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node api/index.js"
   },
   "dependencies": {
     "express": "^4.19.2",
