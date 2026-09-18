@@ -6,7 +6,15 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
+// Vercel serverless functions can only write to /tmp; everywhere else we use
+// a local ./data folder so the site still works offline.
+function chooseDataDir() {
+  if (process.env.VERCEL || process.env.VERCEL_ENV) {
+    return '/tmp/zk-data';
+  }
+  return path.join(__dirname, '..', 'data');
+}
+const DATA_DIR = chooseDataDir();
 
 let supabase = null;
 let useSupabase = false;
