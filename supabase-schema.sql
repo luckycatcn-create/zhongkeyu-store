@@ -168,3 +168,11 @@ insert into products (id, name, description, price, image, sort_order) values
   ('pr15', 'Thermal receipt paper',
    'Lightweight, high-sensitivity thermal paper designed for mobile and portable receipt terminals, offering uniform color density and lower printhead wear.', '', 'https://picsum.photos/seed/ow-p15/600/400', 15)
 on conflict (id) do nothing;
+
+-- ============================================================
+-- Storage bucket for uploaded images (banners / blog / products / content)
+-- The admin "Upload" button saves images here; the API returns a public URL.
+-- ============================================================
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('site-assets', 'site-assets', true, 10485760, '{image/png,image/jpeg,image/webp,image/gif}')
+on conflict (id) do nothing;
