@@ -9,6 +9,7 @@
     "api/index.js": { "maxDuration": 30, "memory": 256 }
   },
   "env": {
-    "ADMIN_PASSWORD": "ADMIN336"
+    "ADMIN_PASSWORD": "ADMIN336",
+    "SUPABASE_URL": "https://zgxwbzcuycqmjfkvnhheb.supabase.co"
   }
 }
