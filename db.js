@@ -1,4 +1,4 @@
-// Data layer for the zhongkeyu site.
+// Data layer for the ONEWORLD clone site.
 // On Vercel (production) it talks to Supabase (Postgres). Locally, when the
 // SUPABASE_* env vars are absent, it gracefully falls back to JSON files under
 // ./data so the site can be developed and smoke-tested without a database.
@@ -7,8 +7,6 @@ const fs = require('fs');
 const path = require('path');
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
-const MSG_FILE = path.join(DATA_DIR, 'messages.jsonl');
-const PROD_FILE = path.join(DATA_DIR, 'products.json');
 
 let supabase = null;
 let useSupabase = false;
@@ -35,29 +33,33 @@ function ensureInit() {
   return useSupabase;
 }
 
-// ---------- local file fallback ----------
-function readLocalMessages() {
-  if (!fs.existsSync(MSG_FILE)) return [];
-  const lines = fs.readFileSync(MSG_FILE, 'utf8').split('\n').filter(Boolean);
-  return lines
+// ---------- local file helpers ----------
+function localFile(name) { return path.join(DATA_DIR, name); }
+function readLocalJson(name, fallback) {
+  const f = localFile(name);
+  if (!fs.existsSync(f)) return fallback;
+  try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return fallback; }
+}
+function writeLocalJson(name, data) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(localFile(name), JSON.stringify(data, null, 2), 'utf8');
+}
+function readLocalJsonl(name) {
+  const f = localFile(name);
+  if (!fs.existsSync(f)) return [];
+  return fs.readFileSync(f, 'utf8').split('\n').filter(Boolean)
     .map((l) => { try { return JSON.parse(l); } catch { return null; } })
     .filter(Boolean)
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
-function appendLocalMessage(rec) {
+function appendLocalJsonl(name, rec) {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.appendFileSync(MSG_FILE, JSON.stringify(rec) + '\n', 'utf8');
-}
-function readLocalProducts() {
-  if (!fs.existsSync(PROD_FILE)) return [];
-  try { return JSON.parse(fs.readFileSync(PROD_FILE, 'utf8')); } catch { return []; }
-}
-function writeLocalProducts(list) {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(PROD_FILE, JSON.stringify(list, null, 2), 'utf8');
+  fs.appendFileSync(localFile(name), JSON.stringify(rec) + '\n', 'utf8');
 }
 
-// ---------- row <-> object mapping (snake_case DB <-> camelCase JS) ----------
+// ============================================================
+// messages
+// ============================================================
 function rowToMessage(r) {
   return {
     id: r.id, createdAt: r.created_at,
@@ -66,47 +68,84 @@ function rowToMessage(r) {
     product: r.product || '', budget: r.budget || '',
   };
 }
-function msgToRow(m) {
-  return {
-    id: m.id, created_at: m.createdAt,
-    name: m.name, email: m.email, phone: m.phone, message: m.message,
-    company: m.company, country: m.country, product: m.product, budget: m.budget,
-  };
-}
-function rowToProduct(r) {
-  return { id: r.id, name: r.name || '', desc: r.description || '', price: r.price || '', image: r.image || '' };
-}
-function prodToRow(p) {
-  return { id: p.id, name: p.name, description: p.desc || '', price: p.price || '', image: p.image || '' };
-}
-
-// ---------- messages ----------
 async function readMessages() {
   if (ensureInit() && supabase) {
     const { data, error } = await supabase.from('messages').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return data.map(rowToMessage);
   }
-  return readLocalMessages();
+  return readLocalJsonl('messages.jsonl');
 }
 async function addMessage(rec) {
   if (ensureInit() && supabase) {
-    const { data, error } = await supabase.from('messages').insert(msgToRow(rec)).select().single();
+    const { data, error } = await supabase.from('messages').insert(rec).select().single();
     if (error) throw error;
     return rowToMessage(data);
   }
-  appendLocalMessage(rec);
+  appendLocalJsonl('messages.jsonl', rec);
   return rec;
 }
+async function deleteMessage(id) {
+  if (ensureInit() && supabase) {
+    const { error } = await supabase.from('messages').delete().eq('id', id);
+    if (error) throw error;
+    return;
+  }
+  writeLocalJsonlKeeping('messages.jsonl', id);
+}
 
-// ---------- products ----------
+// ============================================================
+// quotes (buyer RFQ)
+// ============================================================
+function rowToQuote(r) {
+  return {
+    id: r.id, createdAt: r.created_at,
+    name: r.name || '', email: r.email || '', phone: r.phone || '', company: r.company || '',
+    country: r.country || '', product: r.product || '', message: r.message || '', budget: r.budget || '',
+  };
+}
+async function readQuotes() {
+  if (ensureInit() && supabase) {
+    const { data, error } = await supabase.from('quotes').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data.map(rowToQuote);
+  }
+  return readLocalJsonl('quotes.jsonl');
+}
+async function addQuote(rec) {
+  if (ensureInit() && supabase) {
+    const { data, error } = await supabase.from('quotes').insert(rec).select().single();
+    if (error) throw error;
+    return rowToQuote(data);
+  }
+  appendLocalJsonl('quotes.jsonl', rec);
+  return rec;
+}
+async function deleteQuote(id) {
+  if (ensureInit() && supabase) {
+    const { error } = await supabase.from('quotes').delete().eq('id', id);
+    if (error) throw error;
+    return;
+  }
+  writeLocalJsonlKeeping('quotes.jsonl', id);
+}
+
+// ============================================================
+// products
+// ============================================================
+function rowToProduct(r) {
+  return { id: r.id, name: r.name || '', desc: r.description || '', price: r.price || '', image: r.image || '' };
+}
+function prodToRow(p) {
+  return { id: p.id, name: p.name, description: p.desc || '', price: p.price || '', image: p.image || '', sort_order: p.sort_order || 0 };
+}
 async function readProducts() {
   if (ensureInit() && supabase) {
-    const { data, error } = await supabase.from('products').select('*').order('name', { ascending: true });
+    const { data, error } = await supabase.from('products').select('*').order('sort_order', { ascending: true });
     if (error) throw error;
     return data.map(rowToProduct);
   }
-  return readLocalProducts();
+  return readLocalJson('products.json', []);
 }
 async function upsertProduct(product) {
   if (ensureInit() && supabase) {
@@ -114,10 +153,10 @@ async function upsertProduct(product) {
     if (error) throw error;
     return rowToProduct(data);
   }
-  const list = readLocalProducts();
+  const list = readLocalJson('products.json', []);
   const idx = list.findIndex((p) => p.id === product.id);
   if (idx >= 0) list[idx] = product; else list.push(product);
-  writeLocalProducts(list);
+  writeLocalJson('products.json', list);
   return product;
 }
 async function deleteProduct(id) {
@@ -126,8 +165,131 @@ async function deleteProduct(id) {
     if (error) throw error;
     return;
   }
-  const list = readLocalProducts().filter((p) => p.id !== id);
-  writeLocalProducts(list);
+  writeLocalJson('products.json', readLocalJson('products.json', []).filter((p) => p.id !== id));
 }
 
-module.exports = { ensureInit, readMessages, addMessage, readProducts, upsertProduct, deleteProduct };
+// ============================================================
+// content_blocks (header/footer/sections text+image)
+// ============================================================
+function rowToBlock(r) {
+  return { key: r.key, title: r.title || '', body: r.body || '', image_url: r.image_url || '', link_url: r.link_url || '' };
+}
+async function readContent() {
+  if (ensureInit() && supabase) {
+    const { data, error } = await supabase.from('content_blocks').select('*');
+    if (error) throw error;
+    return data.map(rowToBlock);
+  }
+  return readLocalJson('content.json', []);
+}
+async function upsertContent(block) {
+  if (ensureInit() && supabase) {
+    const { data, error } = await supabase.from('content_blocks')
+      .upsert({ key: block.key, title: block.title || '', body: block.body || '', image_url: block.image_url || '', link_url: block.link_url || '', updated_at: new Date().toISOString() }, { onConflict: 'key' })
+      .select().single();
+    if (error) throw error;
+    return rowToBlock(data);
+  }
+  const list = readLocalJson('content.json', []);
+  const idx = list.findIndex((b) => b.key === block.key);
+  if (idx >= 0) list[idx] = block; else list.push(block);
+  writeLocalJson('content.json', list);
+  return block;
+}
+
+// ============================================================
+// banners
+// ============================================================
+function rowToBanner(r) {
+  return { id: r.id, title: r.title || '', image_url: r.image_url || '', link_url: r.link_url || '', sort_order: r.sort_order || 0, active: !!r.active };
+}
+async function readBanners() {
+  if (ensureInit() && supabase) {
+    const { data, error } = await supabase.from('banners').select('*').order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data.map(rowToBanner);
+  }
+  return readLocalJson('banners.json', []);
+}
+async function upsertBanner(b) {
+  if (ensureInit() && supabase) {
+    const { data, error } = await supabase.from('banners').upsert(b, { onConflict: 'id' }).select().single();
+    if (error) throw error;
+    return rowToBanner(data);
+  }
+  const list = readLocalJson('banners.json', []);
+  const idx = list.findIndex((x) => x.id === b.id);
+  if (idx >= 0) list[idx] = b; else list.push(b);
+  writeLocalJson('banners.json', list);
+  return b;
+}
+async function deleteBanner(id) {
+  if (ensureInit() && supabase) {
+    const { error } = await supabase.from('banners').delete().eq('id', id);
+    if (error) throw error;
+    return;
+  }
+  writeLocalJson('banners.json', readLocalJson('banners.json', []).filter((x) => x.id !== id));
+}
+
+// ============================================================
+// blog_posts
+// ============================================================
+function rowToPost(r) {
+  return {
+    id: r.id, slug: r.slug || '', title: r.title || '', excerpt: r.excerpt || '',
+    body: r.body || '', cover_image: r.cover_image || '', published_at: r.published_at, active: !!r.active,
+  };
+}
+async function readBlog() {
+  if (ensureInit() && supabase) {
+    const { data, error } = await supabase.from('blog_posts').select('*').order('published_at', { ascending: false });
+    if (error) throw error;
+    return data.map(rowToPost);
+  }
+  return readLocalJson('blog.json', []);
+}
+async function readBlogPost(slug) {
+  if (ensureInit() && supabase) {
+    const { data, error } = await supabase.from('blog_posts').select('*').eq('slug', slug).maybeSingle();
+    if (error) throw error;
+    return data ? rowToPost(data) : null;
+  }
+  return readLocalJson('blog.json', []).find((p) => p.slug === slug) || null;
+}
+async function upsertBlog(post) {
+  if (ensureInit() && supabase) {
+    const { data, error } = await supabase.from('blog_posts').upsert(post, { onConflict: 'id' }).select().single();
+    if (error) throw error;
+    return rowToPost(data);
+  }
+  const list = readLocalJson('blog.json', []);
+  const idx = list.findIndex((x) => x.id === post.id);
+  if (idx >= 0) list[idx] = post; else list.push(post);
+  writeLocalJson('blog.json', list);
+  return post;
+}
+async function deleteBlog(id) {
+  if (ensureInit() && supabase) {
+    const { error } = await supabase.from('blog_posts').delete().eq('id', id);
+    if (error) throw error;
+    return;
+  }
+  writeLocalJson('blog.json', readLocalJson('blog.json', []).filter((x) => x.id !== id));
+}
+
+// helper for local jsonl delete
+function writeLocalJsonlKeeping(name, id) {
+  const list = readLocalJsonl(name).filter((r) => r.id !== id);
+  writeLocalJson(name.replace('.jsonl', '.json'), list);
+}
+
+module.exports = {
+  ensureInit,
+  readMessages, addMessage, deleteMessage,
+  readQuotes, addQuote, deleteQuote,
+  readProducts, upsertProduct, deleteProduct,
+  readContent, upsertContent,
+  readBanners, upsertBanner, deleteBanner,
+  readBlog, readBlogPost, upsertBlog, deleteBlog,
+};
