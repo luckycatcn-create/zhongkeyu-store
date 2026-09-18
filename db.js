@@ -278,6 +278,30 @@ async function deleteBlog(id) {
   writeLocalJson('blog.json', readLocalJson('blog.json', []).filter((x) => x.id !== id));
 }
 
+// ============================================================
+// storage upload (images) — Supabase Storage bucket 'site-assets'
+// The admin "Upload" button sends a base64 image; we store it in the
+// public bucket and return a public URL the front-end can use anywhere.
+// ============================================================
+async function uploadImage(opts) {
+  if (!ensureInit() || !supabase) {
+    throw new Error('Storage not connected. Set SUPABASE_SERVICE_ROLE_KEY in Vercel and run supabase-schema.sql.');
+  }
+  const bucket = 'site-assets';
+  try { await supabase.storage.createBucket(bucket, { public: true }); }
+  catch (e) { /* bucket may already exist — ignore */ }
+  const ext = (opts.contentType || 'image/png').split('/')[1] || 'png';
+  const safe = String(opts.filename || 'image').replace(/[^a-zA-Z0-9._-]/g, '_').slice(-40);
+  const stamp = Date.now().toString(36);
+  const p = (opts.folder ? opts.folder + '/' : '') + stamp + '_' + safe + '.' + ext;
+  const buf = Buffer.from(opts.data || '', 'base64');
+  const { error } = await supabase.storage.from(bucket).upload(p, buf, { contentType: opts.contentType, upsert: true });
+  if (error) throw error;
+  const { data } = supabase.storage.from(bucket).getPublicUrl(p);
+  return data.publicUrl;
+}
+function dbStatus() { ensureInit(); return { connected: !!useSupabase, supabase: !!supabase }; }
+
 // helper for local jsonl delete
 function writeLocalJsonlKeeping(name, id) {
   const list = readLocalJsonl(name).filter((r) => r.id !== id);
@@ -285,11 +309,12 @@ function writeLocalJsonlKeeping(name, id) {
 }
 
 module.exports = {
-  ensureInit,
+  ensureInit, dbStatus,
   readMessages, addMessage, deleteMessage,
   readQuotes, addQuote, deleteQuote,
   readProducts, upsertProduct, deleteProduct,
   readContent, upsertContent,
   readBanners, upsertBanner, deleteBanner,
   readBlog, readBlogPost, upsertBlog, deleteBlog,
+  uploadImage,
 };
