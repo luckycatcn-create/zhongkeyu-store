@@ -15,6 +15,7 @@
   #login input { width:100%; padding:11px; margin-bottom:12px; border:1px solid var(--line); border-radius:8px; }
   #login button { width:100%; background:var(--a); border:none; padding:11px; font-weight:700; border-radius:8px; cursor:pointer; }
   .warn { background:#fdeaea; color:#b42318; padding:10px 14px; border-radius:8px; margin-bottom:14px; }
+  .warn.ok { background:#e7f6ec; color:#1d7a3f; }
   header.adm { background:var(--pd); color:#fff; padding:12px 22px; display:flex; justify-content:space-between; align-items:center; }
   header.adm .brand { font-weight:800; font-size:18px; letter-spacing:1px; }
   header.adm button { background:#fff; color:var(--p); border:none; padding:8px 14px; border-radius:8px; font-weight:700; cursor:pointer; }
@@ -39,7 +40,7 @@
   .muted { color:var(--mut); font-size:13px; }
   .pill { display:inline-block; background:#eef2f8; color:var(--p); padding:2px 8px; border-radius:20px; font-size:12px; }
   .ok { color:#1d7a3f; font-weight:700; }
-  img.thumb { height:46px; border-radius:6px; object-fit:cover; }
+  img.thumb { height:46px; border-radius:6px; object-fit:cover; margin-top:6px; }
 </style>
 </head>
 <body>
@@ -67,6 +68,7 @@
     <button data-tab="messages">Messages</button>
   </nav>
   <main id="main" class="hidden"></main>
+  <div id="dbWarn" class="warn hidden" style="max-width:1100px;margin:14px auto 0"></div>
 
 <script>
 (function () {
@@ -81,6 +83,53 @@
     if (r.status === 401) { alert('Session expired, please login again.'); location.reload(); throw new Error('401'); }
     return r;
   };
+
+  // image upload helper (base64 -> Supabase Storage -> public URL)
+  function imgField(inputId, previewId, fileId, value, folder, fld) {
+    const hidden = value ? '' : 'style="display:none"';
+    const srcAttr = value ? 'src="' + esc(value) + '"' : '';
+    return `<label>Image URL</label>
+    <div class="row">
+      <div style="flex:2"><input id="${inputId}" ${fld ? 'data-f="'+fld+'"' : ''} value="${esc(value)}" placeholder="粘贴图片URL，或选文件后点 Upload"></div>
+      <div style="flex:1"><input type="file" id="${fileId}" accept="image/*"></div>
+      <div><button class="btn" type="button" onclick="doUpload('${inputId}','${fileId}','${previewId}','${folder}')">Upload</button></div>
+    </div>
+    <img class="thumb" id="${previewId}" ${hidden} ${srcAttr}>`;
+  }
+  window.doUpload = async (inputId, fileId, previewId, folder) => {
+    const fi = document.getElementById(fileId);
+    const f = fi.files[0];
+    if (!f) return alert('请先选择一个图片文件');
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const b64 = (reader.result || '').split(',')[1];
+      if (!b64) return alert('无法读取文件内容');
+      try {
+        const res = await apiFetch('/api/upload', { method: 'POST', body: JSON.stringify({ folder, filename: f.name, contentType: f.type, data: b64 }) });
+        const j = await res.json();
+        if (j.ok) {
+          document.getElementById(inputId).value = j.url;
+          const pv = document.getElementById(previewId);
+          if (pv) { pv.src = j.url; pv.style.display = ''; }
+          alert('上传成功！图片地址：' + j.url + ' （点对应板块的 Save 后才会生效）');
+        } else { alert('上传失败：' + (j.error || '未知错误')); }
+      } catch (e) { alert('上传出错：' + e.message); }
+    };
+    reader.readAsDataURL(f);
+  };
+
+  // db connection status banner
+  async function checkDb() {
+    try {
+      const j = await (await fetch('/api/db-status')).json();
+      const w = document.getElementById('dbWarn');
+      if (j.connected) { w.classList.add('hidden'); }
+      else {
+        w.classList.remove('hidden');
+        w.innerHTML = '⚠️ 数据库未连接：所有保存都不会生效，前台也会空白。请在 Vercel 项目 Settings → Environment Variables 设置 <b>SUPABASE_SERVICE_ROLE_KEY</b>（service_role 密钥，不是 anon），并在 Supabase SQL Editor 运行 <b>supabase-schema.sql</b>，然后 Redeploy。';
+      }
+    } catch (e) { /* ignore */ }
+  }
 
   // boot check
   (function bootCheck() {
@@ -103,6 +152,7 @@
       document.getElementById('login').classList.add('hidden');
       ['admHeader','tabs','main'].forEach(id => document.getElementById(id).classList.remove('hidden'));
       loadTab('content');
+      checkDb();
     } else { alert('Wrong password.'); }
   };
   document.getElementById('logoutBtn').onclick = async () => {
@@ -116,6 +166,7 @@
 
   const main = document.getElementById('main');
   async function loadTab(tab) {
+    checkDb();
     if (tab === 'content') return renderContent();
     if (tab === 'banners') return renderBanners();
     if (tab === 'blog') return renderBlog();
@@ -127,20 +178,22 @@
   // ---------- Content (header/footer/sections) ----------
   async function renderContent() {
     const list = await (await apiFetch('/api/content')).json();
-    let html = '<h3>Editable Content Blocks (header / footer / hero / about / factory / contact)</h3>';
-    html += '<div class="panel"><p class="muted">Each block holds a title, text (body), an image URL and a link URL. The front-end reads these live.</p>';
+    const grp = (k) => (k === 'site_name' || k.startsWith('header_')) ? '页眉 Header' : (k.startsWith('footer_') ? '页脚 Footer' : '板块 Section');
+    let html = '<h3>可编辑内容块（页眉 / 页脚 / 各板块图文）</h3>';
+    html += '<div class="panel"><p class="muted">每个块含 标题 / 正文 / 图片 / 链接。图片可直接点 Upload 上传到 Supabase Storage 并自动填入地址；点 Save 后前台实时生效。</p></div>';
     for (const b of list) {
       html += `<div class="panel" data-key="${esc(b.key)}">
-        <div class="row"><div><label>Key</label><span class="pill">${esc(b.key)}</span></div>
-        <div><label>Title</label><input data-f="title" value="${esc(b.title)}"></div></div>
-        <label>Body / Text</label><textarea data-f="body">${esc(b.body)}</textarea>
-        <div class="row"><div><label>Image URL</label><input data-f="image_url" value="${esc(b.image_url)}"></div>
-        <div><label>Link URL</label><input data-f="link_url" value="${esc(b.link_url)}"></div></div>
+        <div class="row"><div><label>分组</label><span class="pill">${esc(grp(b.key))}</span></div>
+        <div><label>Key</label><span class="pill">${esc(b.key)}</span></div></div>
+        <label>Title</label><input data-f="title" value="${esc(b.title)}">
+        <label>Body / 正文</label><textarea data-f="body">${esc(b.body)}</textarea>
+        ${imgField('img_' + b.key, 'prev_' + b.key, 'file_' + b.key, b.image_url, 'content', 'image_url')}
+        <label>Link URL</label><input data-f="link_url" value="${esc(b.link_url)}">
         <button class="btn s" onclick="saveBlock('${esc(b.key)}')">Save</button>
         <span id="st_${esc(b.key)}"></span>
       </div>`;
     }
-    html += '</div>';
+    if (!list.length) html += '<div class="panel muted">暂无内容块。若你已运行 SQL，请确认 SUPABASE_SERVICE_ROLE_KEY 已配置并重试。</div>';
     main.innerHTML = html;
   }
   window.saveBlock = async (key) => {
@@ -149,7 +202,8 @@
     const body = { key, title:get('title'), body:get('body'), image_url:get('image_url'), link_url:get('link_url') };
     const r = await apiFetch('/api/content', { method:'PUT', body: JSON.stringify(body) });
     const st = document.getElementById('st_' + key);
-    st.textContent = r.ok ? ' ✓ saved' : ' ✗ failed'; st.className = r.ok ? 'ok' : '';
+    if (r.ok) { st.textContent = ' ✓ saved'; st.className = 'ok'; }
+    else { st.textContent = ' ✗ failed'; st.className = ''; const j = await r.json().catch(() => ({})); alert('保存失败：' + (j.error || r.status)); }
     setTimeout(() => st.textContent = '', 2000);
   };
 
@@ -159,7 +213,7 @@
     let html = '<h3>Banners (home carousel)</h3><div class="panel"><h4>Add / Edit Banner</h4>';
     html += `<div class="row"><div><label>ID (leave for new)</label><input id="b_id" placeholder="auto"></div>
       <div><label>Title</label><input id="b_title"></div></div>
-      <label>Image URL</label><input id="b_img">
+      ${imgField('b_img', 'prev_b', 'file_b', '', 'banners')}
       <label>Link URL</label><input id="b_link" placeholder="/#/products">
       <div class="row"><div><label>Sort order</label><input id="b_sort" type="number" value="0"></div>
       <div><label>Active</label><select id="b_active"><option value="true">Yes</option><option value="false">No</option></select></div></div>
@@ -178,7 +232,9 @@
       link_url:document.getElementById('b_link').value, sort_order:Number(document.getElementById('b_sort').value)||0,
       active: document.getElementById('b_active').value === 'true' };
     const id = document.getElementById('b_id').value.trim(); if (id) b.id = id;
-    await apiFetch('/api/banners', { method:'POST', body: JSON.stringify(b) }); renderBanners();
+    const r = await apiFetch('/api/banners', { method:'POST', body: JSON.stringify(b) });
+    if (!r.ok) { const j = await r.json().catch(() => ({})); alert('保存失败：' + (j.error || r.status)); }
+    renderBanners();
   };
   window.delBanner = async (id) => { if (confirm('Delete this banner?')) { await apiFetch('/api/banners/'+id, { method:'DELETE' }); renderBanners(); } };
 
@@ -189,7 +245,7 @@
     html += `<label>Slug (unique, optional)</label><input id="p_slug" placeholder="my-post-title">
       <label>Title</label><input id="p_title">
       <label>Excerpt</label><textarea id="p_excerpt"></textarea>
-      <label>Cover Image URL</label><input id="p_img">
+      ${imgField('p_img', 'prev_p', 'file_p', '', 'blog')}
       <label>Body</label><textarea id="p_body" style="min-height:160px"></textarea>
       <div class="row"><div><label>Published date</label><input id="p_date" type="date"></div>
       <div><label>Active</label><select id="p_active"><option value="true">Yes</option><option value="false">No</option></select></div></div>
@@ -208,7 +264,9 @@
     const p = { slug:document.getElementById('p_slug').value.trim(), title:document.getElementById('p_title').value,
       excerpt:document.getElementById('p_excerpt').value, cover_image:document.getElementById('p_img').value,
       body:document.getElementById('p_body').value, published_at:date, active: document.getElementById('p_active').value === 'true' };
-    await apiFetch('/api/blog', { method:'POST', body: JSON.stringify(p) }); renderBlog();
+    const r = await apiFetch('/api/blog', { method:'POST', body: JSON.stringify(p) });
+    if (!r.ok) { const j = await r.json().catch(() => ({})); alert('保存失败：' + (j.error || r.status)); }
+    renderBlog();
   };
   window.delPost = async (id) => { if (confirm('Delete this post?')) { await apiFetch('/api/blog/'+id, { method:'DELETE' }); renderBlog(); } };
 
@@ -219,7 +277,7 @@
     html += `<div class="row"><div><label>ID (leave for new)</label><input id="pr_id" placeholder="auto"></div>
       <div><label>Name *</label><input id="pr_name"></div></div>
       <label>Description</label><textarea id="pr_desc"></textarea>
-      <div class="row"><div><label>Image URL</label><input id="pr_img"></div>
+      <div class="row"><div>${imgField('pr_img', 'prev_pr', 'file_pr', '', 'products')}</div>
       <div><label>Price</label><input id="pr_price" placeholder="optional"></div>
       <div><label>Sort</label><input id="pr_sort" type="number" value="0"></div></div>
       <button class="btn" onclick="saveProduct()">Add Product</button></div>`;
@@ -238,7 +296,9 @@
       sort_order:Number(document.getElementById('pr_sort').value)||0 };
     if (!p.name) return alert('Name is required');
     const id = document.getElementById('pr_id').value.trim(); if (id) p.id = id;
-    await apiFetch('/api/products', { method:'POST', body: JSON.stringify(p) }); renderProducts();
+    const r = await apiFetch('/api/products', { method:'POST', body: JSON.stringify(p) });
+    if (!r.ok) { const j = await r.json().catch(() => ({})); alert('保存失败：' + (j.error || r.status)); }
+    renderProducts();
   };
   window.delProduct = async (id) => { if (confirm('Delete this product?')) { await apiFetch('/api/products/'+id, { method:'DELETE' }); renderProducts(); } };
 
