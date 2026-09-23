@@ -342,10 +342,25 @@
     if (nt) nt.addEventListener('click', () => document.getElementById('navMain').classList.toggle('open'));
   }
 
+  // ---------- analytics: report SPA (hash) route changes to GTM as virtual pageviews ----------
+  function trackPageview() {
+    try {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: 'virtualPageview',
+        pagePath: location.hash || '#/',
+        pageTitle: document.title,
+      });
+    } catch (e) { /* analytics must never break the app */ }
+  }
+
   // ---------- boot ----------
   (async function boot() {
     try { await loadAll(); } catch (e) { console.error(e); }
     window.addEventListener('hashchange', render);
+    // push a virtual pageview after every SPA route change (GTM's default
+    // pageview only fires on the very first full page load)
+    window.addEventListener('hashchange', trackPageview);
     render();
   })();
 })();
